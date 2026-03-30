@@ -10,9 +10,16 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
+          extensions: mbstring, xml, ctype, iconv, mysql, pdo_mysql
 
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist
+
+      - name: Create .env file
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+
+      - name: Generate App Key
+        run: php artisan key:generate
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -24,10 +31,12 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Build APK with NativePHP
-        run: php artisan native:build android
+        # እዚህ ጋር 'android' የሚለው ተወግዶ '--mobile' ሆኗል
+        run: php artisan native:build --mobile --no-interaction
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: alarm-app-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          # ማንኛውም ቦታ የተፈጠረ .apk ፋይል እንዲያገኝ path ተስተካክሏል
+          path: "**/*.apk"
