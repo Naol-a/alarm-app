@@ -24,11 +24,14 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Build APK with NativePHP
-        env:
-          NATIVEPHP_SKIP_IOS: true # iOS buildን እንዲዘል ያዘዋል
         run: |
+          # iOS Build Command እንዳይሰራ በባዶ ፋይል መተካት
+          echo "<?php namespace NativePHP\Mobile\Commands; use Illuminate\Console\Command; class BuildIosAppCommand extends Command { protected \$signature = 'native:build:ios'; public function handle() { return 0; } }" > vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
+
           mkdir -p nativephp
           touch nativephp/ios-build.log
+
+          # አንድሮይድ Build ማስጀመር
           php artisan native:build --no-interaction
 
       - name: Upload APK
