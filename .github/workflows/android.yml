@@ -14,7 +14,7 @@ jobs:
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -24,13 +24,11 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Build APK with NativePHP
+        env:
+          NATIVEPHP_SKIP_IOS: true # iOS buildን እንዲዘል ያዘዋል
         run: |
-          # የ iOS ስህተትን ለማለፍ ፎልደሩንና ፋይሉን በግድ እንፈጥራለን
           mkdir -p nativephp
           touch nativephp/ios-build.log
-          touch nativephp/android-build.log
-
-          # ምንም አይነት Option ሳንጨምር Build እናዝዘዋለን
           php artisan native:build --no-interaction
 
       - name: Upload APK
