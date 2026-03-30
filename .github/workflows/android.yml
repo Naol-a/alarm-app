@@ -1,5 +1,6 @@
 name: Build Android APK
 on: [push]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -9,10 +10,16 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
+          php-version: "8.3" # 8.4 is very new; 8.3 is safer for most NativePHP builds currently
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, zip
+          coverage: none
 
       - name: Install Dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: |
+          composer install --no-interaction --prefer-dist
+          # Create .env file and generate key so artisan commands work
+          cp .env.example .env || touch .env
+          php artisan key:generate
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -26,14 +33,22 @@ jobs:
       - name: Build APK with NativePHP
         run: |
           mkdir -p nativephp
-          touch nativephp/ios-build.log
+          touch nativephp/android-build.log
 
-          # Hack: Disable the iOS build command content to prevent errors on Linux
-          sed -i '<?php namespace/!d; /namespace/a use Illuminate\\Console\\Command; class BuildIosAppCommand extends Command { protected \$signature = "native:build:ios"; public function handle() { return 0; } }' vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
-          truncate -s 0 vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
-          echo "<?php namespace NativePHP\Mobile\Commands; use Illuminate\Console\Command; class BuildIosAppCommand extends Command { protected \$signature = 'native:build:ios'; public function handle() { return 0; } }" > vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
+          # Cleaner hack to disable the iOS build command that crashes on Linux
+          cat <<EOF > vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
+          <?php 
+          namespace NativePHP\Mobile\Commands; 
+          use Illuminate\Console\Command; 
+          class BuildIosAppCommand extends Command { 
+              protected \$signature = 'native:build:ios'; 
+              public function handle() { return 0; } 
+          }
+          EOF
 
-          php artisan native:build --no-interaction
+          # Run the build specifically for android (if your version supports the flag)
+          # Otherwise, native:build will attempt to build everything
+          php artisan native:build android --no-interaction
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
