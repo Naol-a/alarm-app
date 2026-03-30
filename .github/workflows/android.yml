@@ -25,13 +25,11 @@ jobs:
 
       - name: Build APK with NativePHP
         run: |
-          # iOS Build Command እንዳይሰራ በባዶ ፋይል መተካት
-          echo "<?php namespace NativePHP\Mobile\Commands; use Illuminate\Console\Command; class BuildIosAppCommand extends Command { protected \$signature = 'native:build:ios'; public function handle() { return 0; } }" > vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
-
           mkdir -p nativephp
           touch nativephp/ios-build.log
-
-          # አንድሮይድ Build ማስጀመር
+          touch nativephp/android-build.log
+          rm -f vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
+          echo "<?php namespace NativePHP\Mobile\Commands; use Illuminate\Console\Command; class BuildIosAppCommand extends Command { protected \$signature = 'native:build:ios'; public function handle() { return 0; } }" > vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
           php artisan native:build --no-interaction
 
       - name: Upload APK
