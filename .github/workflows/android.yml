@@ -16,6 +16,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          # Install normally. This will run package discovery once.
           composer install --no-interaction --prefer-dist
           cp .env.example .env || touch .env
           php artisan key:generate
@@ -34,24 +35,25 @@ jobs:
           mkdir -p nativephp
           touch nativephp/android-build.log
 
-          # 1. Delete the existing file to avoid class collision
-          rm -f vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
-
-          # 2. Create the dummy class
+          # 1. Overwrite the iOS command with a safety wrapper
+          # The 'if (!class_exists)' prevents the "Cannot redeclare" fatal error
           cat <<'EOF' > vendor/nativephp/mobile/src/Commands/BuildIosAppCommand.php
           <?php
           namespace NativePHP\Mobile\Commands;
           use Illuminate\Console\Command;
-          class BuildIosAppCommand extends Command {
-              protected $signature = 'native:build:ios';
-              public function handle() { return 0; }
+
+          if (!class_exists('NativePHP\Mobile\Commands\BuildIosAppCommand')) {
+              class BuildIosAppCommand extends Command {
+                  protected $signature = 'native:build:ios';
+                  public function handle() { return 0; }
+              }
           }
           EOF
 
-          # 3. Refresh the autoloader to recognize the change
-          composer dump-autoload
+          # 2. Clear any cached discovery or config that might point to old files
+          php artisan config:clear
 
-          # 4. Run the build
+          # 3. Run the build (Targeting only android)
           php artisan native:build android --no-interaction
 
       - name: Upload APK
