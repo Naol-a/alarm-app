@@ -64,7 +64,6 @@ jobs:
         with:
           name: alarm-app-apk
           path: "**/*.apk"
-
       - name: Show Logs on Failure
         if: failure()
         run: |
